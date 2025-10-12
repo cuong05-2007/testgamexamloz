@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌸 Một Vườn Hoa Dành Tặng Riêng Em 🌸</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E🌸%3C/text%3E%3C/svg%3E">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Quicksand:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color-start: #fff0f5; /* Lavender Blush */
+            --bg-color-end: #ffffff;
+            --primary-pink: #ffb6c1; /* Light Pink */
+            --darker-pink: #ff8fab; /* Stronger Pink */
+            --rose-gold: #e7c2c3;
+            --text-dark: #5c5c5c;
+            --white-color: #fff;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Quicksand', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(180deg, var(--bg-color-start) 0%, var(--bg-color-end) 100%);
+            overflow: hidden;
+            position: relative;
+            user-select: none;
+            cursor: none;
+        }
+        
+        .cursor-trail {
+            position: fixed;
+            font-size: 24px;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s ease-out, opacity 0.3s ease-out;
+            z-index: 9999;
+            opacity: 0;
+        }
+        body:hover .cursor-trail {
+            opacity: 1;
+        }
+
+        .petal {
+            position: absolute;
+            top: -50px;
+            font-size: 20px;
+            pointer-events: none;
+            animation: fall linear infinite;
+        }
+        
+        @keyframes fall {
+            0% {
+                transform: translateY(0) rotate(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(105vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .gift-container {
+            cursor: none;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            /* Sửa lại transition để mượt hơn */
+            transition: transform 0.5s ease-out, opacity 0.5s ease-out;
+        }
+
+        .instruction-text {
+            color: var(--darker-pink);
+            text-shadow: 0 0 10px var(--white-color);
+            font-family: 'Great Vibes', cursive;
+            font-size: 2.5rem;
+            animation: text-glow-pink 2s infinite alternate;
+        }
+        
+        @keyframes text-glow-pink {
+            from { opacity: 0.8; }
+            to { opacity: 1; text-shadow: 0 0 15px var(--primary-pink); }
+        }
+
+        .gift-box-wrapper {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            transition: transform 0.3s ease;
+        }
+        
+        .gift-container:hover .gift-box-wrapper {
+            transform: translateY(-15px) scale(1.05);
+        }
+
+        .gift-box-base {
+            width: 180px;
+            height: 100px;
+            background-color: var(--primary-pink);
+            position: absolute;
+            bottom: 0;
+            left: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+
+        .gift-lid {
+            width: 200px;
+            height: 40px;
+            background-color: var(--darker-pink);
+            position: absolute;
+            top: 60px;
+            left: 0;
+            z-index: 10;
+            transition: transform 1s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            transform-origin: bottom center;
+            border-radius: 5px;
+        }
+        
+        .gift-lid.open {
+            transform: translateY(-250px) rotate(35deg);
+        }
+        
+        .ribbon {
+            background-color: var(--rose-gold);
+            box-shadow: 0 0 10px rgba(231, 194, 195, 0.7);
+            position: absolute;
+        }
+        .ribbon-vertical {
+            width: 25px;
+            height: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .ribbon-lid-horizontal {
+            width: 100%;
+            height: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .message-card {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: var(--text-dark);
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            border: 2px solid rgba(255, 182, 193, 0.5);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 600px;
+            z-index: 100;
+            opacity: 0;
+            /* Animation xuất hiện của thẻ được điều chỉnh lại trong JS */
+        }
+        
+        @keyframes card-fade-in {
+            from { opacity: 0; transform: translate(-50%, -40%) scale(0.9); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .message-card h1 {
+            font-family: 'Great Vibes', cursive;
+            color: var(--darker-pink);
+            font-size: 3.8rem;
+            margin: 0;
+            text-shadow: 0 0 10px var(--primary-pink);
+        }
+
+        .message-card p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin: 25px 0;
+            font-weight: 600;
+        }
+
+        .message-card .signature {
+            font-family: 'Great Vibes', cursive;
+            font-size: 2.2rem;
+            color: var(--darker-pink);
+            margin-top: 30px;
+        }
+
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 99;
+            pointer-events: none;
+        }
+
+    </style>
+</head>
+<body>
+    
+    <div class="cursor-trail">🌸</div>
+
+    <div class="gift-container" id="gift-container">
+        <div class="gift-box-wrapper">
+            <div class="gift-lid" id="gift-lid">
+                <div class="ribbon ribbon-lid-horizontal"></div>
+            </div>
+            <div class="gift-box-base">
+                <div class="ribbon ribbon-vertical"></div>
+            </div>
+        </div>
+        <p class="instruction-text">Mở quà đi, cô gái xinh đẹp...</p>
+    </div>
+
+    <div class="message-card" id="message-card">
+        <h1>Gửi Tặng Em, Bông Hoa Của Anh!</h1>
+        <p>Chúc mừng ngày 20/10. Giữa vạn người, em vẫn là bông hoa xinh đẹp và rực rỡ nhất. Mong em một đời an yên, luôn vui vẻ và được yêu thương như em xứng đáng.</p>
+        <p class="signature">- From your special one -</p>
+    </div>
+    
+    <canvas id="confetti-canvas"></canvas>
+
+    <audio id="background-music" loop>
+        <source src="your-music.mp3" type="audio/mpeg">
+    </audio>
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const giftContainer = document.getElementById('gift-container');
+            const giftLid = document.getElementById('gift-lid');
+            const messageCard = document.getElementById('message-card');
+            const audio = document.getElementById('background-music');
+            const cursorTrail = document.querySelector('.cursor-trail');
+
+            window.addEventListener('mousemove', e => {
+                cursorTrail.style.left = `${e.clientX}px`;
+                cursorTrail.style.top = `${e.clientY}px`;
+            });
+            
+            function createPetal() {
+                const petal = document.createElement('div');
+                petal.className = 'petal';
+                petal.innerHTML = '🌸';
+                document.body.appendChild(petal);
+
+                const startX = Math.random() * window.innerWidth;
+                const duration = Math.random() * 5 + 7;
+                const sway = Math.random() * 200 - 100;
+
+                petal.style.left = `${startX}px`;
+                petal.style.animationDuration = `${duration}s`;
+                
+                const keyframes = `@keyframes fall-${startX} {
+                    0% { transform: translateY(0) rotate(0) translateX(0); opacity: 1; }
+                    100% { transform: translateY(105vh) rotate(720deg) translateX(${sway}px); opacity: 0; }
+                }`;
+                const styleSheet = document.createElement("style");
+                styleSheet.innerText = keyframes;
+                document.head.appendChild(styleSheet);
+                petal.style.animationName = `fall-${startX}`;
+
+                setTimeout(() => {
+                    petal.remove();
+                    styleSheet.remove();
+                }, duration * 1000);
+            }
+            setInterval(createPetal, 400);
+
+            // --- ✨ PHẦN NÂNG CẤP HIỆU ỨNG MỞ QUÀ ✨ ---
+
+            function showCentralBurst() {
+                const myCanvas = document.getElementById('confetti-canvas');
+                const myConfetti = confetti.create(myCanvas, {
+                    resize: true,
+                    useWorker: true
+                });
+                
+                // Hiệu ứng chính: một chùm lớn bung tỏa từ trung tâm
+                myConfetti({
+                    particleCount: 150,
+                    spread: 120, // Tỏa ra một góc rộng hơn
+                    origin: { y: 0.6, x: 0.5 }, // Từ trung tâm
+                    startVelocity: 40, // Tốc độ bắn mạnh hơn
+                    gravity: 0.8, // Rơi xuống nhanh hơn một chút
+                    shapes: ['text'],
+                    shapeOptions: { text: { value: ['🌸', '💖'] } },
+                    scalar: 2
+                });
+
+                // Hiệu ứng phụ: các tia nhỏ lấp lánh bay lên
+                setTimeout(() => {
+                    myConfetti({
+                        particleCount: 100,
+                        spread: 360,
+                        origin: { y: 0.5, x: 0.5 },
+                        ticks: 150, // Tồn tại lâu hơn một chút
+                        shapes: ['star'],
+                        colors: ['#FFB6C1', '#FF8FAB', '#FFD700', '#FFFFFF'],
+                        scalar: 1.2
+                    });
+                }, 150); // Xuất hiện ngay sau chùm chính
+            }
+
+
+            // Xử lý sự kiện click đã được biên đạo lại
+            giftContainer.addEventListener('click', () => {
+                if (giftLid.classList.contains('open')) return;
+                
+                // Bước 1: Mở nắp và làm mờ hộp quà
+                giftLid.classList.add('open');
+                giftContainer.style.transform = 'scale(0.8)'; // Hộp quà thu nhỏ lại
+                giftContainer.style.opacity = '0';
+                
+                audio.play().catch(e => console.error("Audio play failed:", e));
+
+                // Bước 2: Sau khi hộp quà gần biến mất, kích hoạt hiệu ứng bung tỏa
+                setTimeout(() => {
+                    giftContainer.style.display = 'none'; // Ẩn hoàn toàn hộp quà
+                    showCentralBurst();
+                }, 500); // Đợi 0.5s cho animation của hộp quà
+
+                // Bước 3: Sau khi hiệu ứng bung tỏa bắt đầu, thẻ lời chúc từ từ xuất hiện
+                setTimeout(() => {
+                    messageCard.style.display = 'block';
+                    messageCard.style.animation = 'card-fade-in 1.5s ease-out forwards';
+                }, 800); // Đợi 0.8s, sau khi hoa đã bung ra
+            });
+        });
+    </script>
+</body>
+</html>
