@@ -15,7 +15,7 @@
       font-family: 'Courier New', Courier, monospace;
       background-color: #000;
       color: #33ff33;
-      overflow: hidden; /* Ngăn cuộn trang trên đt */
+      overflow: hidden;
       display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;
       transition: background-color 0.2s;
       box-sizing: border-box;
@@ -25,16 +25,13 @@
     }
     h1 { margin: 5px 0; font-size: 2.2em; text-shadow: 0 0 10px #3f3; color: #fff; text-transform: uppercase; text-align: center;}
     
-    /* SỬA LẠI STATS CHO RESPONSIVE */
     #stats { display: flex; gap: 10px; font-size: 1.1em; margin-bottom: 5px; font-weight: bold; width: 95%; max-width: 800px; justify-content: space-between; flex-wrap: wrap;}
     
-    /* SỬA LẠI GAME WRAPPER VÀ CANVAS CHO RESPONSIVE */
     #gameWrapper { position: relative; border: 3px solid #3f3; box-shadow: 0 0 25px #0a0; border-radius: 12px; overflow: hidden; width: 95%; max-width: 800px; display: flex; justify-content: center; align-items: center;}
     #gameCanvas { display: block; background: var(--matrix-bg); transition: background 0.3s; width: 100%; height: auto; aspect-ratio: 8/5; object-fit: contain; }
     
     #gameWrapper.troll-time #gameCanvas { background: #330000; border-color: #f00; box-shadow: 0 0 25px #f00; }
 
-    /* Thanh năng lượng né siêu cấp */
     #dodgeEnergyBarWrapper {
       position: absolute; top: 10px; left: 10px; width: 250px; max-width: 40%; height: 18px;
       border: 2px solid #3f3; border-radius: 10px; overflow: hidden; background: #000; z-index: 2;
@@ -46,7 +43,6 @@
     }
     #gameWrapper.troll-time #dodgeEnergyBar { background: #f00; }
 
-    /* Overlay Webcam góc nhỏ */
     #webcamWrapper {
       position: absolute; bottom: 10px; right: 10px;
       width: 140px; height: 100px;
@@ -73,7 +69,6 @@
     #msg { font-size: 2em; margin-bottom: 25px; text-align: center; line-height: 1.4; color: #fff; padding: 0 15px;}
     #score_final { color: #f00; font-size: 1.8em; font-weight: bold;}
 
-    /* CHỈNH LẠI FONT VÀ SIZE CHO MÀN HÌNH NHỎ (ĐIỆN THOẠI) */
     @media (max-width: 600px) {
       h1 { font-size: 1.5em; }
       #webcamWrapper { width: 100px; height: 75px; }
@@ -81,6 +76,14 @@
       #msg { font-size: 1.3em; }
       #score_final { font-size: 1.5em; }
     }
+    
+    /* Hiệu ứng chớp màn hình khi dùng chiêu cuối */
+    #flashOverlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.8); z-index: 5;
+      opacity: 0; pointer-events: none; transition: opacity 0.1s;
+    }
+    .flash-active { opacity: 1 !important; transition: opacity 0s !important; }
   </style>
 </head>
 <body>
@@ -92,7 +95,7 @@
   </div>
 
   <div id="gameWrapper">
-    <canvas id="gameCanvas" width="800" height="500"></canvas>
+    <div id="flashOverlay"></div> <canvas id="gameCanvas" width="800" height="500"></canvas>
     
     <div id="dodgeEnergyBarWrapper"><div id="dodgeEnergyBar"></div></div>
 
@@ -125,37 +128,56 @@
     const scoreEl = document.getElementById('scoreDisplay');
     const aiStatusEl = document.getElementById('aiStatus');
     const dodgeEnergyBar = document.getElementById('dodgeEnergyBar');
+    const flashOverlay = document.getElementById('flashOverlay');
 
     let detector;
     let isAIReady = false;
 
-    // --- BIẾN ẨN: NHẬN DIỆN LẮC ĐẦU ---
+    // --- BIẾN ẨN: NHẬN DIỆN LẮC ĐẦU (KHIÊN) ---
     let lastNoseX = 0;
     let shakeDir = 0; 
     let shakeCount = 0;
     let lastShakeTime = 0;
+
+    // --- BIẾN ẨN: NHẬN DIỆN GẬT ĐẦU (CHIÊU CUỐI XÓA MÀN) ---
+    let lastNoseY = 0;
+    let nodDir = 0;
+    let nodCount = 0;
+    let lastNodTime = 0;
 
     // --- PLAYER (Điểm mũi) ---
     const player = {
       x: canvas.width / 2, y: canvas.height / 2,
       radius: 16,
       targetX: canvas.width / 2, targetY: canvas.height / 2,
-      hitboxRadius: 10, // Hitbox nhỏ hơn để công bằng
-      hasShield: false // Trạng thái khiên ngầm
+      hitboxRadius: 10,
+      hasShield: false
     };
 
     function lerp(start, end, factor) { return start + (end - start) * factor; }
 
+    // --- HÀM CHIÊU CUỐI: XÓA CHƯỚNG NGẠI VẬT ---
+    function triggerUltimateClear() {
+      if (bullets.length === 0) return; // Không có gì thì không kích hoạt
+      
+      // Tạo hạt nổ tại vị trí của từng viên đạn hiện tại (Hạt màu đỏ/cam)
+      bullets.forEach(b => {
+        createParticles(b.x, b.y, "rgba(255, 69, 0, 1)"); 
+      });
+
+      bullets = []; // XÓA SẠCH ĐẠN
+      screenShake = 25; // Rung màn hình cực mạnh
+      
+      // Chớp sáng màn hình
+      flashOverlay.classList.add('flash-active');
+      setTimeout(() => { flashOverlay.classList.remove('flash-active'); }, 50);
+    }
+
     // --- AI MOVENET SETUP ---
     async function initAI() {
       try {
-        // CẬP NHẬT: THÊM facingMode: "user" ĐỂ ÉP ĐIỆN THOẠI MỞ CAMERA TRƯỚC
         const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
-            width: { ideal: 320 }, 
-            height: { ideal: 240 },
-            facingMode: "user" 
-          } 
+          video: { width: { ideal: 320 }, height: { ideal: 240 }, facingMode: "user" } 
         });
         video.srcObject = stream;
         
@@ -166,7 +188,6 @@
           };
         });
 
-        // MoveNet Thunder - Nhanh và chính xác hơn Lightning
         detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.SINGLEPOSE_THUNDER });
         
         isAIReady = true;
@@ -176,7 +197,6 @@
       } catch (err) {
         aiStatusEl.innerText = "CAMERA LỖI!";
         msgEl.innerText = "Không thể truy cập Camera.\nGame này cần camera để né!";
-        console.error(err);
       }
     }
 
@@ -193,30 +213,44 @@
           pCtx.fillStyle = "cyan"; pCtx.beginPath(); pCtx.arc(nose.x, nose.y, 6, 0, Math.PI*2); pCtx.fill();
           player.targetX = canvas.width - (nose.x / video.videoWidth) * canvas.width;
           player.targetY = (nose.y / video.videoHeight) * canvas.height;
+          let now = Date.now();
 
-          // LOGIC ẨN: THEO DÕI LẮC ĐẦU
+          // 1. LOGIC ẨN: THEO DÕI LẮC ĐẦU (Trái - Phải) -> Lấy Khiên
           let dx = player.targetX - lastNoseX;
-          if (Math.abs(dx) > 15) { // Cử động đủ mạnh mới tính
+          if (Math.abs(dx) > 15) { 
             let currentDir = dx > 0 ? 1 : -1;
-            let now = Date.now();
-            
             if (currentDir !== shakeDir) { 
-              if (now - lastShakeTime < 500) { // Đảo chiều nhanh
+              if (now - lastShakeTime < 500) {
                 shakeCount++;
                 if (shakeCount >= 3) { 
-                  if (!player.hasShield) {
-                    player.hasShield = true; // KÍCH HOẠT KHIÊN
-                  }
+                  if (!player.hasShield) player.hasShield = true;
                   shakeCount = 0; 
                 }
-              } else {
-                shakeCount = 1; 
-              }
+              } else { shakeCount = 1; }
               shakeDir = currentDir;
               lastShakeTime = now;
             }
           }
           lastNoseX = player.targetX;
+
+          // 2. LOGIC MỚI: THEO DÕI GẬT ĐẦU (Lên - Xuống) -> Xóa toàn bộ đạn
+          let dy = player.targetY - lastNoseY;
+          if (Math.abs(dy) > 15) { // Cử động lên/xuống đủ mạnh
+            let currentNodDir = dy > 0 ? 1 : -1;
+            if (currentNodDir !== nodDir) {
+              if (now - lastNodTime < 600) { // Đảo chiều nhanh (Gật liên tục)
+                nodCount++;
+                if (nodCount >= 4) { // 4 nhịp đảo chiều (~2 cú gật trọn vẹn)
+                  triggerUltimateClear();
+                  nodCount = 0; // Reset đếm
+                }
+              } else { nodCount = 1; }
+              nodDir = currentNodDir;
+              lastNodTime = now;
+            }
+          }
+          lastNoseY = player.targetY;
+
         }
       }
       requestAnimationFrame(detectPose);
@@ -231,7 +265,6 @@
     let score = 0;
     let frames = 0;
     let screenShake = 0;
-    let timeSinceLastBoss = 0;
 
     const trollEmojis = ["🧱", "💩", "🍅", "💣"];
     const toxicMatrixChars = ["!", "@", "#", "$", "%", "*", "(", ")"];
@@ -242,17 +275,17 @@
         this.radius = 12;
         this.id = Math.random();
         
-        if (this.type === "🧱") { // Rơi từ trên trời
+        if (this.type === "🧱") { 
           this.radius = 18; this.x = Math.random() * canvas.width; this.y = -50;
           this.vx = 0; this.vy = 4 + (score / 150);
-        } else if (this.type === "💩") { // Đuổi theo người chơi
+        } else if (this.type === "💩") { 
           this.radius = 15; this.x = (Math.random() < 0.5 ? -30 : canvas.width + 30); this.y = Math.random() * canvas.height;
           this.vx = (Math.random() < 0.5 ? 2 : -2); this.vy = (Math.random() < 0.5 ? 2 : -2);
           this.homingFactor = 0.01 + (score / 30000);
-          this.age = 0; // Biến lưu số frame tồn tại để tính chu kỳ dí/nghỉ
-        } else { // Bay thường (🍅, 💣)
+          this.age = 0; 
+        } else { 
           this.radius = 12;
-          let edge = Math.floor(Math.random() * 2); // 0: Right, 1: Left
+          let edge = Math.floor(Math.random() * 2); 
           this.x = (edge === 0 ? canvas.width + 30 : -30); this.y = Math.random() * canvas.height;
           this.vx = (edge === 0 ? -1 : 1) * (3 + (score / 200)); this.vy = (Math.random() - 0.5) * 3;
         }
@@ -261,38 +294,31 @@
       update() {
         this.x += this.vx; this.y += this.vy;
         
-        if (this.type === "💩") { // Logic đuổi theo 3s - nghỉ 3s
+        if (this.type === "💩") { 
           this.age++;
-          let cycle = this.age % 360; // 360 frame = 6 giây (60fps)
+          let cycle = this.age % 360; 
           
-          if (cycle < 180) { // 3 giây đầu (180 frame): DÍ THEO
+          if (cycle < 180) { 
             this.vx += (player.x - this.x) * this.homingFactor;
             this.vy += (player.y - this.y) * this.homingFactor;
             let speed = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
             let limit = 4 + (score / 200);
             if (speed > limit) { this.vx = (this.vx/speed) * limit; this.vy = (this.vy/speed) * limit; }
           }
-          // Nếu cycle >= 180 (3 giây sau): KHÔNG cập nhật gia tốc, tự động trượt theo quán tính cũ
         }
       }
       
       draw() { 
         ctx.font = `${this.radius * 2}px Arial`; 
-        
-        // Làm mờ khi hết dí để tạo tín hiệu thị giác cho người chơi
-        if (this.type === "💩" && this.age % 360 >= 180) {
-          ctx.globalAlpha = 0.4; // Làm mờ 60%
-        } else {
-          ctx.globalAlpha = 1.0;
-        }
-        
+        if (this.type === "💩" && this.age % 360 >= 180) ctx.globalAlpha = 0.4; 
+        else ctx.globalAlpha = 1.0;
         ctx.fillText(this.type, this.x, this.y); 
-        ctx.globalAlpha = 1.0; // Trả lại chuẩn cho các frame vẽ sau
+        ctx.globalAlpha = 1.0; 
       }
     }
 
-    // --- HIỆU ỨNG KHI VỠ KHIÊN ---
-    function createShieldBreakParticles(x, y) {
+    // --- HIỆU ỨNG HẠT VỠ (Sửa lại để tùy biến màu sắc) ---
+    function createParticles(x, y, color = "rgba(0, 255, 255, 1)") {
       for (let i = 0; i < 20; i++) {
         particles.push({
           x: x, y: y,
@@ -300,12 +326,11 @@
           vy: (Math.random() - 0.5) * 10,
           radius: Math.random() * 4 + 1,
           life: 1,
-          color: "rgba(0, 255, 255, 1)" // Hạt khiên vỡ màu xanh biển
+          color: color 
         });
       }
     }
 
-    // --- MATRIX BACKGROUND VỚI CHỮ CAY CÚ ---
     let matrixDrops = [];
     let matrixStrings = [];
     const columns = Math.floor(canvas.width / 18);
@@ -326,20 +351,17 @@
       }
     }
 
-    // --- GAME LOOP LOGIC (Update) ---
     function updateGame() {
       player.x = lerp(player.x, player.targetX, 0.4);
       player.y = lerp(player.y, player.targetY, 0.4);
 
-      // Spawn đạn (Đa dạng và nhanh dần)
       let spawnRate = Math.max(10, 50 - Math.floor(score / 150));
       if (frames % spawnRate === 0) {
         bullets.push(new Bullet());
-        if (Math.random() < 0.3) bullets.push(new Bullet("🧱")); // Thỉnh thoảng spawn gạch
-        if (Math.random() < 0.1) bullets.push(new Bullet("💩")); // Thỉnh thoảng spawn phân đuổi
+        if (Math.random() < 0.3) bullets.push(new Bullet("🧱")); 
+        if (Math.random() < 0.1) bullets.push(new Bullet("💩")); 
       }
 
-      // Cập nhật đạn & check va chạm
       for (let i = bullets.length - 1; i >= 0; i--) {
         let b = bullets[i];
         b.update();
@@ -348,22 +370,18 @@
         let dx = b.x - player.x; let dy = b.y - player.y;
         let distance = Math.sqrt(dx*dx + dy*dy);
 
-        // KIỂM TRA VA CHẠM
         if (distance < player.hitboxRadius + b.radius - 8) { 
           if (player.hasShield) {
-            // NẾU CÓ KHIÊN BÍ MẬT: Đỡ đạn, vỡ khiên, đạn biến mất
             player.hasShield = false;
             bullets.splice(i, 1);
             screenShake = 10;
-            createShieldBreakParticles(player.x, player.y);
+            createParticles(player.x, player.y, "rgba(0, 255, 255, 1)"); // Vỡ khiên màu xanh
           } else {
-            // KHÔNG CÓ KHIÊN: CHẾT
             gameOver(); 
           }
         }
       }
 
-      // Cập nhật Hạt (Particles)
       for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i];
         p.x += p.vx; p.y += p.vy; p.life -= 0.05;
@@ -375,14 +393,12 @@
       if (frames % 60 === 0) { score++; scoreEl.innerText = `hưởng dương: ${score}s`; }
     }
 
-    // --- GAME LOOP VẼ (Render) ---
     function renderGame() {
       ctx.save();
       if (screenShake > 0) ctx.translate((Math.random()-0.5) * screenShake, (Math.random()-0.5) * screenShake);
       drawMatrixBackground();
       bullets.forEach(b => b.draw());
 
-      // Vẽ các hạt vỡ khiên
       particles.forEach(p => {
         ctx.globalAlpha = p.life;
         ctx.fillStyle = p.color;
@@ -390,7 +406,6 @@
         ctx.globalAlpha = 1.0;
       });
 
-      // VẼ KHIÊN ẨN MÀU XANH TRONG SUỐT (nếu người chơi đã lắc đầu thành công)
       if (player.hasShield) {
         ctx.beginPath();
         ctx.arc(player.x, player.y, player.radius + 15, 0, Math.PI * 2);
@@ -401,7 +416,6 @@
         ctx.fill();
       }
 
-      // Vẽ Player (Điểm mũi)
       ctx.fillStyle = "#fff"; ctx.font = "24px Arial"; ctx.textAlign = "center";
       ctx.fillText("😎", player.x, player.y);
       ctx.restore();
@@ -413,29 +427,38 @@
       }
     }
 
-    // --- QUẢN LÝ TRẠNG THÁI GAME ---
     function startGame() {
       overlayMenu.style.display = "none";
       isGameRunning = true;
       score = 0; frames = 0; bullets = []; particles = []; screenShake = 0;
-      player.hasShield = false; // Reset khiên
+      player.hasShield = false; 
+      nodCount = 0; shakeCount = 0; // Đặt lại bộ đếm khiên và gật
       scoreEl.innerText = "cố gắng: 0s";
       gameLoop();
     }
 
     function gameOver() {
-      isGameRunning = false; cancelAnimationFrame(gameLoopId);
-      overlayMenu.style.display = "flex";
-      
-      let failMsg = "hơi non !";
-      if (score < 5) failMsg = "gà thế không biết ? THỬ LẠI ĐI!";
-      else if (score > 10) failMsg = " CŨNG KHÉT ĐẤY!\nNHƯNG VẪN CHẾT con gà à.";
-      else if (score > 30) failMsg = " chúc mừng bạn đã nhận được phần thưởng từ chủ phát hành game !";
+  isGameRunning = false; 
+  cancelAnimationFrame(gameLoopId);
+  overlayMenu.style.display = "flex";
+  
+  // Logic xét số giây sống để khịa (Đã sắp xếp đúng thứ tự)
+  let failMsg = "hơi non !"; // Nếu sống được 1 giây thì ra câu này
+  
+  if (score < 15) {
+    failMsg = "gà thế không biết ? THỬ LẠI ĐI!";
+  } else if (score >= 40) { // Sống từ 3 giây trở lên
+    failMsg = " chúc mừng bạn đã nhận được phần thưởng từ chủ phát hành game !";
+  } else if (score >= 25) { // Sống được 2 giây
+    failMsg = " CŨNG KHÉT ĐẤY!\nNHƯNG VẪN CHẾT con gà à.";
+  }
 
-      msgEl.innerHTML = `${failMsg}<br>tuổi thọ : <span id="score_final">${score} giây</span>`;
-      startBtn.innerText = " (caydodai)";
-      startBtn.style.display = "block";
-    }
+  // Thay chữ "tuổi thọ" thành "số giây sống"
+  msgEl.innerHTML = `${failMsg}<br>số giây sống : <span id="score_final">${score} giây</span>`;
+  
+  startBtn.innerText = " (caydodai)";
+  startBtn.style.display = "block";
+}
 
     startBtn.addEventListener('click', startGame);
 
