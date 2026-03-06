@@ -2,6 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>game xam lox</title>
   <style>
     :root {
@@ -14,24 +15,29 @@
       font-family: 'Courier New', Courier, monospace;
       background-color: #000;
       color: #33ff33;
-      overflow: hidden;
-      display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;
+      overflow: hidden; /* Ngăn cuộn trang trên đt */
+      display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;
       transition: background-color 0.2s;
+      box-sizing: border-box;
     }
     body.bullet-time-active {
       background-color: var(--bullet-time-bg);
     }
-    h1 { margin: 5px 0; font-size: 2.2em; text-shadow: 0 0 10px #3f3; color: #fff; text-transform: uppercase;}
-    #stats { display: flex; gap: 30px; font-size: 1.1em; margin-bottom: 5px; font-weight: bold; width: 800px; justify-content: space-between;}
+    h1 { margin: 5px 0; font-size: 2.2em; text-shadow: 0 0 10px #3f3; color: #fff; text-transform: uppercase; text-align: center;}
     
-    #gameWrapper { position: relative; border: 3px solid #3f3; box-shadow: 0 0 25px #0a0; border-radius: 12px; overflow: hidden; }
-    #gameCanvas { display: block; background: var(--matrix-bg); transition: background 0.3s;}
+    /* SỬA LẠI STATS CHO RESPONSIVE */
+    #stats { display: flex; gap: 10px; font-size: 1.1em; margin-bottom: 5px; font-weight: bold; width: 95%; max-width: 800px; justify-content: space-between; flex-wrap: wrap;}
+    
+    /* SỬA LẠI GAME WRAPPER VÀ CANVAS CHO RESPONSIVE */
+    #gameWrapper { position: relative; border: 3px solid #3f3; box-shadow: 0 0 25px #0a0; border-radius: 12px; overflow: hidden; width: 95%; max-width: 800px; display: flex; justify-content: center; align-items: center;}
+    #gameCanvas { display: block; background: var(--matrix-bg); transition: background 0.3s; width: 100%; height: auto; aspect-ratio: 8/5; object-fit: contain; }
+    
     #gameWrapper.troll-time #gameCanvas { background: #330000; border-color: #f00; box-shadow: 0 0 25px #f00; }
 
     /* Thanh năng lượng né siêu cấp */
     #dodgeEnergyBarWrapper {
-      position: absolute; top: 10px; left: 10px; width: 250px; height: 18px;
-      border: 2px solid #3f3; border-radius: 10px; overflow: hidden; background: #000;
+      position: absolute; top: 10px; left: 10px; width: 250px; max-width: 40%; height: 18px;
+      border: 2px solid #3f3; border-radius: 10px; overflow: hidden; background: #000; z-index: 2;
     }
     #gameWrapper.troll-time #dodgeEnergyBarWrapper { border-color: #f00; }
     #dodgeEnergyBar {
@@ -46,10 +52,10 @@
       width: 140px; height: 100px;
       border: 2px solid rgba(0, 255, 0, 0.4); border-radius: 8px;
       opacity: 0.6; overflow: hidden; background: #000;
-      transition: border-color 0.3s;
+      transition: border-color 0.3s; z-index: 2;
     }
     #webcamWrapper video, #webcamWrapper canvas {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1);
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); object-fit: cover;
     }
     
     .btn {
@@ -64,8 +70,17 @@
       background: rgba(0, 0, 0, 0.95); display: flex; flex-direction: column;
       align-items: center; justify-content: center; z-index: 10;
     }
-    #msg { font-size: 2em; margin-bottom: 25px; text-align: center; line-height: 1.4; color: #fff;}
+    #msg { font-size: 2em; margin-bottom: 25px; text-align: center; line-height: 1.4; color: #fff; padding: 0 15px;}
     #score_final { color: #f00; font-size: 1.8em; font-weight: bold;}
+
+    /* CHỈNH LẠI FONT VÀ SIZE CHO MÀN HÌNH NHỎ (ĐIỆN THOẠI) */
+    @media (max-width: 600px) {
+      h1 { font-size: 1.5em; }
+      #webcamWrapper { width: 100px; height: 75px; }
+      .btn { padding: 10px 20px; font-size: 1em; }
+      #msg { font-size: 1.3em; }
+      #score_final { font-size: 1.5em; }
+    }
   </style>
 </head>
 <body>
@@ -134,7 +149,14 @@
     // --- AI MOVENET SETUP ---
     async function initAI() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+        // CẬP NHẬT: THÊM facingMode: "user" ĐỂ ÉP ĐIỆN THOẠI MỞ CAMERA TRƯỚC
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            width: { ideal: 320 }, 
+            height: { ideal: 240 },
+            facingMode: "user" 
+          } 
+        });
         video.srcObject = stream;
         
         await new Promise(resolve => {
@@ -154,6 +176,7 @@
       } catch (err) {
         aiStatusEl.innerText = "CAMERA LỖI!";
         msgEl.innerText = "Không thể truy cập Camera.\nGame này cần camera để né!";
+        console.error(err);
       }
     }
 
@@ -406,7 +429,7 @@
       
       let failMsg = "hơi non !";
       if (score < 5) failMsg = "gà thế không biết ? THỬ LẠI ĐI!";
-      else if (score > 10) failMsg = " CŨNG KHÉT ĐẤY!\NHƯNG VẪN CHẾT con gà à.";
+      else if (score > 10) failMsg = " CŨNG KHÉT ĐẤY!\nNHƯNG VẪN CHẾT con gà à.";
       else if (score > 30) failMsg = " chúc mừng bạn đã nhận được phần thưởng từ chủ phát hành game !";
 
       msgEl.innerHTML = `${failMsg}<br>tuổi thọ : <span id="score_final">${score} giây</span>`;
