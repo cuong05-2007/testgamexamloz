@@ -1,343 +1,421 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🌸 Một Vườn Hoa Dành Tặng Riêng Em 🌸</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E🌸%3C/text%3E%3C/svg%3E">
+  <meta charset="UTF-8">
+  <title>game xam lox</title>
+  <style>
+    :root {
+      --cyan: #0ff;
+      --matrix-bg: #000500;
+      --bullet-time-bg: #100;
+    }
+    body {
+      margin: 0; padding: 0;
+      font-family: 'Courier New', Courier, monospace;
+      background-color: #000;
+      color: #33ff33;
+      overflow: hidden;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh;
+      transition: background-color 0.2s;
+    }
+    body.bullet-time-active {
+      background-color: var(--bullet-time-bg);
+    }
+    h1 { margin: 5px 0; font-size: 2.2em; text-shadow: 0 0 10px #3f3; color: #fff; text-transform: uppercase;}
+    #stats { display: flex; gap: 30px; font-size: 1.1em; margin-bottom: 5px; font-weight: bold; width: 800px; justify-content: space-between;}
+    
+    #gameWrapper { position: relative; border: 3px solid #3f3; box-shadow: 0 0 25px #0a0; border-radius: 12px; overflow: hidden; }
+    #gameCanvas { display: block; background: var(--matrix-bg); transition: background 0.3s;}
+    #gameWrapper.troll-time #gameCanvas { background: #330000; border-color: #f00; box-shadow: 0 0 25px #f00; }
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Quicksand:wght@400;600&display=swap" rel="stylesheet">
+    /* Thanh năng lượng né siêu cấp */
+    #dodgeEnergyBarWrapper {
+      position: absolute; top: 10px; left: 10px; width: 250px; height: 18px;
+      border: 2px solid #3f3; border-radius: 10px; overflow: hidden; background: #000;
+    }
+    #gameWrapper.troll-time #dodgeEnergyBarWrapper { border-color: #f00; }
+    #dodgeEnergyBar {
+      width: 100%; height: 100%; background: #0a0;
+      transition: width 0.1s linear, background 0.3s;
+    }
+    #gameWrapper.troll-time #dodgeEnergyBar { background: #f00; }
 
-    <style>
-        :root {
-            --bg-color-start: #fff0f5; /* Lavender Blush */
-            --bg-color-end: #ffffff;
-            --primary-pink: #ffb6c1; /* Light Pink */
-            --darker-pink: #ff8fab; /* Stronger Pink */
-            --rose-gold: #e7c2c3;
-            --text-dark: #5c5c5c;
-            --white-color: #fff;
-        }
-
-        body {
-            margin: 0;
-            font-family: 'Quicksand', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(180deg, var(--bg-color-start) 0%, var(--bg-color-end) 100%);
-            overflow: hidden;
-            position: relative;
-            user-select: none;
-            cursor: none;
-        }
-        
-        .cursor-trail {
-            position: fixed;
-            font-size: 24px;
-            pointer-events: none;
-            transform: translate(-50%, -50%);
-            transition: transform 0.1s ease-out, opacity 0.3s ease-out;
-            z-index: 9999;
-            opacity: 0;
-        }
-        body:hover .cursor-trail {
-            opacity: 1;
-        }
-
-        .petal {
-            position: absolute;
-            top: -50px;
-            font-size: 20px;
-            pointer-events: none;
-            animation: fall linear infinite;
-        }
-        
-        @keyframes fall {
-            0% {
-                transform: translateY(0) rotate(0);
-                opacity: 1;
-            }
-            100% {
-                transform: translateY(105vh) rotate(720deg);
-                opacity: 0;
-            }
-        }
-
-        .gift-container {
-            cursor: none;
-            text-align: center;
-            position: relative;
-            z-index: 10;
-            /* Sửa lại transition để mượt hơn */
-            transition: transform 0.5s ease-out, opacity 0.5s ease-out;
-        }
-
-        .instruction-text {
-            color: var(--darker-pink);
-            text-shadow: 0 0 10px var(--white-color);
-            font-family: 'Great Vibes', cursive;
-            font-size: 2.5rem;
-            animation: text-glow-pink 2s infinite alternate;
-        }
-        
-        @keyframes text-glow-pink {
-            from { opacity: 0.8; }
-            to { opacity: 1; text-shadow: 0 0 15px var(--primary-pink); }
-        }
-
-        .gift-box-wrapper {
-            position: relative;
-            width: 200px;
-            height: 200px;
-            transition: transform 0.3s ease;
-        }
-        
-        .gift-container:hover .gift-box-wrapper {
-            transform: translateY(-15px) scale(1.05);
-        }
-
-        .gift-box-base {
-            width: 180px;
-            height: 100px;
-            background-color: var(--primary-pink);
-            position: absolute;
-            bottom: 0;
-            left: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            border-radius: 8px;
-        }
-
-        .gift-lid {
-            width: 200px;
-            height: 40px;
-            background-color: var(--darker-pink);
-            position: absolute;
-            top: 60px;
-            left: 0;
-            z-index: 10;
-            transition: transform 1s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-            transform-origin: bottom center;
-            border-radius: 5px;
-        }
-        
-        .gift-lid.open {
-            transform: translateY(-250px) rotate(35deg);
-        }
-        
-        .ribbon {
-            background-color: var(--rose-gold);
-            box-shadow: 0 0 10px rgba(231, 194, 195, 0.7);
-            position: absolute;
-        }
-        .ribbon-vertical {
-            width: 25px;
-            height: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-        .ribbon-lid-horizontal {
-            width: 100%;
-            height: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        .message-card {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: var(--text-dark);
-            padding: 40px;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(15px);
-            border-radius: 20px;
-            border: 2px solid rgba(255, 182, 193, 0.5);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            max-width: 600px;
-            z-index: 100;
-            opacity: 0;
-            /* Animation xuất hiện của thẻ được điều chỉnh lại trong JS */
-        }
-        
-        @keyframes card-fade-in {
-            from { opacity: 0; transform: translate(-50%, -40%) scale(0.9); }
-            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-        }
-
-        .message-card h1 {
-            font-family: 'Great Vibes', cursive;
-            color: var(--darker-pink);
-            font-size: 3.8rem;
-            margin: 0;
-            text-shadow: 0 0 10px var(--primary-pink);
-        }
-
-        .message-card p {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            margin: 25px 0;
-            font-weight: 600;
-        }
-
-        .message-card .signature {
-            font-family: 'Great Vibes', cursive;
-            font-size: 2.2rem;
-            color: var(--darker-pink);
-            margin-top: 30px;
-        }
-
-        #confetti-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 99;
-            pointer-events: none;
-        }
-
-    </style>
+    /* Overlay Webcam góc nhỏ */
+    #webcamWrapper {
+      position: absolute; bottom: 10px; right: 10px;
+      width: 140px; height: 100px;
+      border: 2px solid rgba(0, 255, 0, 0.4); border-radius: 8px;
+      opacity: 0.6; overflow: hidden; background: #000;
+      transition: border-color 0.3s;
+    }
+    #webcamWrapper video, #webcamWrapper canvas {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1);
+    }
+    
+    .btn {
+      padding: 12px 40px; font-size: 1.3em; font-family: 'Courier New', Courier, monospace; font-weight: bold;
+      background: #000; color: #3f3; border: 2px solid #3f3; border-radius: 8px;
+      cursor: pointer; margin-top: 20px; text-transform: uppercase; box-shadow: 0 0 15px #0a0; transition: 0.2s;
+    }
+    .btn:hover { background: #3f3; color: #000; }
+    
+    #overlayMenu {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.95); display: flex; flex-direction: column;
+      align-items: center; justify-content: center; z-index: 10;
+    }
+    #msg { font-size: 2em; margin-bottom: 25px; text-align: center; line-height: 1.4; color: #fff;}
+    #score_final { color: #f00; font-size: 1.8em; font-weight: bold;}
+  </style>
 </head>
 <body>
-    
-    <div class="cursor-trail">🌸</div>
 
-    <div class="gift-container" id="gift-container">
-        <div class="gift-box-wrapper">
-            <div class="gift-lid" id="gift-lid">
-                <div class="ribbon ribbon-lid-horizontal"></div>
-            </div>
-            <div class="gift-box-base">
-                <div class="ribbon ribbon-vertical"></div>
-            </div>
-        </div>
-        <p class="instruction-text">Mở quà đi, cô gái xinh đẹp...</p>
+  <h1>CẤP ĐỘ đơn giản nhất </h1>
+  <div id="stats">
+    <div id="scoreDisplay">sinh tồn : 0s</div>
+    <div id="aiStatus" style="color:red">tôi đag bị lag </div>
+  </div>
+
+  <div id="gameWrapper">
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
+    
+    <div id="dodgeEnergyBarWrapper"><div id="dodgeEnergyBar"></div></div>
+
+    <div id="webcamWrapper">
+      <video id="webcam" autoplay playsinline></video>
+      <canvas id="poseCanvas"></canvas>
     </div>
 
-    <div class="message-card" id="message-card">
-        <h1>Gửi Tặng Em, Bông Hoa Của Anh!</h1>
-        <p>Chúc mừng ngày 20/10. Giữa vạn người, em vẫn là bông hoa xinh đẹp và rực rỡ nhất. Mong em một đời an yên, luôn vui vẻ và được yêu thương như em xứng đáng.</p>
-        <p class="signature">- From your special one -</p>
+    <div id="overlayMenu">
+      <div id="msg">AI ĐANG QUÉT CƠ THỂ xấu xí của BẠN...</div>
+      <button id="startBtn" class="btn" style="display: none;">chúc bạn may mắn </button>
     </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+
+  <script>
+    const video = document.getElementById('webcam');
+    const poseCanvas = document.getElementById('poseCanvas');
+    const pCtx = poseCanvas.getContext('2d');
     
-    <canvas id="confetti-canvas"></canvas>
-
-    <audio id="background-music" loop>
-        <source src="your-music.mp3" type="audio/mpeg">
-    </audio>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
     
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-    
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const giftContainer = document.getElementById('gift-container');
-            const giftLid = document.getElementById('gift-lid');
-            const messageCard = document.getElementById('message-card');
-            const audio = document.getElementById('background-music');
-            const cursorTrail = document.querySelector('.cursor-trail');
+    const gameWrapper = document.getElementById('gameWrapper');
+    const startBtn = document.getElementById('startBtn');
+    const overlayMenu = document.getElementById('overlayMenu');
+    const msgEl = document.getElementById('msg');
+    const scoreEl = document.getElementById('scoreDisplay');
+    const aiStatusEl = document.getElementById('aiStatus');
+    const dodgeEnergyBar = document.getElementById('dodgeEnergyBar');
 
-            window.addEventListener('mousemove', e => {
-                cursorTrail.style.left = `${e.clientX}px`;
-                cursorTrail.style.top = `${e.clientY}px`;
-            });
-            
-            function createPetal() {
-                const petal = document.createElement('div');
-                petal.className = 'petal';
-                petal.innerHTML = '🌸';
-                document.body.appendChild(petal);
+    let detector;
+    let isAIReady = false;
 
-                const startX = Math.random() * window.innerWidth;
-                const duration = Math.random() * 5 + 7;
-                const sway = Math.random() * 200 - 100;
+    // --- BIẾN ẨN: NHẬN DIỆN LẮC ĐẦU ---
+    let lastNoseX = 0;
+    let shakeDir = 0; 
+    let shakeCount = 0;
+    let lastShakeTime = 0;
 
-                petal.style.left = `${startX}px`;
-                petal.style.animationDuration = `${duration}s`;
-                
-                const keyframes = `@keyframes fall-${startX} {
-                    0% { transform: translateY(0) rotate(0) translateX(0); opacity: 1; }
-                    100% { transform: translateY(105vh) rotate(720deg) translateX(${sway}px); opacity: 0; }
-                }`;
-                const styleSheet = document.createElement("style");
-                styleSheet.innerText = keyframes;
-                document.head.appendChild(styleSheet);
-                petal.style.animationName = `fall-${startX}`;
+    // --- PLAYER (Điểm mũi) ---
+    const player = {
+      x: canvas.width / 2, y: canvas.height / 2,
+      radius: 16,
+      targetX: canvas.width / 2, targetY: canvas.height / 2,
+      hitboxRadius: 10, // Hitbox nhỏ hơn để công bằng
+      hasShield: false // Trạng thái khiên ngầm
+    };
 
-                setTimeout(() => {
-                    petal.remove();
-                    styleSheet.remove();
-                }, duration * 1000);
-            }
-            setInterval(createPetal, 400);
+    function lerp(start, end, factor) { return start + (end - start) * factor; }
 
-            // --- ✨ PHẦN NÂNG CẤP HIỆU ỨNG MỞ QUÀ ✨ ---
-
-            function showCentralBurst() {
-                const myCanvas = document.getElementById('confetti-canvas');
-                const myConfetti = confetti.create(myCanvas, {
-                    resize: true,
-                    useWorker: true
-                });
-                
-                // Hiệu ứng chính: một chùm lớn bung tỏa từ trung tâm
-                myConfetti({
-                    particleCount: 150,
-                    spread: 120, // Tỏa ra một góc rộng hơn
-                    origin: { y: 0.6, x: 0.5 }, // Từ trung tâm
-                    startVelocity: 40, // Tốc độ bắn mạnh hơn
-                    gravity: 0.8, // Rơi xuống nhanh hơn một chút
-                    shapes: ['text'],
-                    shapeOptions: { text: { value: ['🌸', '💖'] } },
-                    scalar: 2
-                });
-
-                // Hiệu ứng phụ: các tia nhỏ lấp lánh bay lên
-                setTimeout(() => {
-                    myConfetti({
-                        particleCount: 100,
-                        spread: 360,
-                        origin: { y: 0.5, x: 0.5 },
-                        ticks: 150, // Tồn tại lâu hơn một chút
-                        shapes: ['star'],
-                        colors: ['#FFB6C1', '#FF8FAB', '#FFD700', '#FFFFFF'],
-                        scalar: 1.2
-                    });
-                }, 150); // Xuất hiện ngay sau chùm chính
-            }
-
-
-            // Xử lý sự kiện click đã được biên đạo lại
-            giftContainer.addEventListener('click', () => {
-                if (giftLid.classList.contains('open')) return;
-                
-                // Bước 1: Mở nắp và làm mờ hộp quà
-                giftLid.classList.add('open');
-                giftContainer.style.transform = 'scale(0.8)'; // Hộp quà thu nhỏ lại
-                giftContainer.style.opacity = '0';
-                
-                audio.play().catch(e => console.error("Audio play failed:", e));
-
-                // Bước 2: Sau khi hộp quà gần biến mất, kích hoạt hiệu ứng bung tỏa
-                setTimeout(() => {
-                    giftContainer.style.display = 'none'; // Ẩn hoàn toàn hộp quà
-                    showCentralBurst();
-                }, 500); // Đợi 0.5s cho animation của hộp quà
-
-                // Bước 3: Sau khi hiệu ứng bung tỏa bắt đầu, thẻ lời chúc từ từ xuất hiện
-                setTimeout(() => {
-                    messageCard.style.display = 'block';
-                    messageCard.style.animation = 'card-fade-in 1.5s ease-out forwards';
-                }, 800); // Đợi 0.8s, sau khi hoa đã bung ra
-            });
+    // --- AI MOVENET SETUP ---
+    async function initAI() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+        video.srcObject = stream;
+        
+        await new Promise(resolve => {
+          video.onloadedmetadata = () => {
+            poseCanvas.width = video.videoWidth; poseCanvas.height = video.videoHeight;
+            video.play(); resolve();
+          };
         });
-    </script>
+
+        // MoveNet Thunder - Nhanh và chính xác hơn Lightning
+        detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, { modelType: poseDetection.movenet.modelType.SINGLEPOSE_THUNDER });
+        
+        isAIReady = true;
+        aiStatusEl.innerText = "tận hưởng đi "; aiStatusEl.style.color = "#0f0";
+        startBtn.style.display = "block";
+        detectPose();
+      } catch (err) {
+        aiStatusEl.innerText = "CAMERA LỖI!";
+        msgEl.innerText = "Không thể truy cập Camera.\nGame này cần camera để né!";
+      }
+    }
+
+    async function detectPose() {
+      if (!isAIReady) return;
+      const poses = await detector.estimatePoses(video);
+      pCtx.clearRect(0, 0, poseCanvas.width, poseCanvas.height);
+
+      if (poses.length > 0) {
+        const keypoints = poses[0].keypoints;
+        const nose = keypoints.find(k => k.name === 'nose');
+
+        if (nose && nose.score > 0.3) {
+          pCtx.fillStyle = "cyan"; pCtx.beginPath(); pCtx.arc(nose.x, nose.y, 6, 0, Math.PI*2); pCtx.fill();
+          player.targetX = canvas.width - (nose.x / video.videoWidth) * canvas.width;
+          player.targetY = (nose.y / video.videoHeight) * canvas.height;
+
+          // LOGIC ẨN: THEO DÕI LẮC ĐẦU
+          let dx = player.targetX - lastNoseX;
+          if (Math.abs(dx) > 15) { // Cử động đủ mạnh mới tính
+            let currentDir = dx > 0 ? 1 : -1;
+            let now = Date.now();
+            
+            if (currentDir !== shakeDir) { 
+              if (now - lastShakeTime < 500) { // Đảo chiều nhanh
+                shakeCount++;
+                if (shakeCount >= 3) { 
+                  if (!player.hasShield) {
+                    player.hasShield = true; // KÍCH HOẠT KHIÊN
+                  }
+                  shakeCount = 0; 
+                }
+              } else {
+                shakeCount = 1; 
+              }
+              shakeDir = currentDir;
+              lastShakeTime = now;
+            }
+          }
+          lastNoseX = player.targetX;
+        }
+      }
+      requestAnimationFrame(detectPose);
+    }
+    initAI();
+
+    // --- GAME ENGINE ---
+    let bullets = [];
+    let particles = [];
+    let gameLoopId;
+    let isGameRunning = false;
+    let score = 0;
+    let frames = 0;
+    let screenShake = 0;
+    let timeSinceLastBoss = 0;
+
+    const trollEmojis = ["🧱", "💩", "🍅", "💣"];
+    const toxicMatrixChars = ["!", "@", "#", "$", "%", "*", "(", ")"];
+
+    class Bullet {
+      constructor(type) {
+        this.type = type || trollEmojis[Math.floor(Math.random() * trollEmojis.length)];
+        this.radius = 12;
+        this.id = Math.random();
+        
+        if (this.type === "🧱") { // Rơi từ trên trời
+          this.radius = 18; this.x = Math.random() * canvas.width; this.y = -50;
+          this.vx = 0; this.vy = 4 + (score / 150);
+        } else if (this.type === "💩") { // Đuổi theo người chơi
+          this.radius = 15; this.x = (Math.random() < 0.5 ? -30 : canvas.width + 30); this.y = Math.random() * canvas.height;
+          this.vx = (Math.random() < 0.5 ? 2 : -2); this.vy = (Math.random() < 0.5 ? 2 : -2);
+          this.homingFactor = 0.01 + (score / 30000);
+          this.age = 0; // Biến lưu số frame tồn tại để tính chu kỳ dí/nghỉ
+        } else { // Bay thường (🍅, 💣)
+          this.radius = 12;
+          let edge = Math.floor(Math.random() * 2); // 0: Right, 1: Left
+          this.x = (edge === 0 ? canvas.width + 30 : -30); this.y = Math.random() * canvas.height;
+          this.vx = (edge === 0 ? -1 : 1) * (3 + (score / 200)); this.vy = (Math.random() - 0.5) * 3;
+        }
+      }
+      
+      update() {
+        this.x += this.vx; this.y += this.vy;
+        
+        if (this.type === "💩") { // Logic đuổi theo 3s - nghỉ 3s
+          this.age++;
+          let cycle = this.age % 360; // 360 frame = 6 giây (60fps)
+          
+          if (cycle < 180) { // 3 giây đầu (180 frame): DÍ THEO
+            this.vx += (player.x - this.x) * this.homingFactor;
+            this.vy += (player.y - this.y) * this.homingFactor;
+            let speed = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+            let limit = 4 + (score / 200);
+            if (speed > limit) { this.vx = (this.vx/speed) * limit; this.vy = (this.vy/speed) * limit; }
+          }
+          // Nếu cycle >= 180 (3 giây sau): KHÔNG cập nhật gia tốc, tự động trượt theo quán tính cũ
+        }
+      }
+      
+      draw() { 
+        ctx.font = `${this.radius * 2}px Arial`; 
+        
+        // Làm mờ khi hết dí để tạo tín hiệu thị giác cho người chơi
+        if (this.type === "💩" && this.age % 360 >= 180) {
+          ctx.globalAlpha = 0.4; // Làm mờ 60%
+        } else {
+          ctx.globalAlpha = 1.0;
+        }
+        
+        ctx.fillText(this.type, this.x, this.y); 
+        ctx.globalAlpha = 1.0; // Trả lại chuẩn cho các frame vẽ sau
+      }
+    }
+
+    // --- HIỆU ỨNG KHI VỠ KHIÊN ---
+    function createShieldBreakParticles(x, y) {
+      for (let i = 0; i < 20; i++) {
+        particles.push({
+          x: x, y: y,
+          vx: (Math.random() - 0.5) * 10,
+          vy: (Math.random() - 0.5) * 10,
+          radius: Math.random() * 4 + 1,
+          life: 1,
+          color: "rgba(0, 255, 255, 1)" // Hạt khiên vỡ màu xanh biển
+        });
+      }
+    }
+
+    // --- MATRIX BACKGROUND VỚI CHỮ CAY CÚ ---
+    let matrixDrops = [];
+    let matrixStrings = [];
+    const columns = Math.floor(canvas.width / 18);
+    for(let i=0; i<columns; i++) {
+      matrixDrops[i] = Math.random() * canvas.height;
+      matrixStrings[i] = Array(20).fill("").map(() => String.fromCharCode(0x30A0 + Math.random() * 96));
+    }
+
+    function drawMatrixBackground() {
+      ctx.fillStyle = "rgba(0, 8, 0, 0.15)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#0a0"; ctx.font = "14px monospace"; ctx.textAlign = "left";
+      for(let i=0; i<matrixDrops.length; i++) {
+        let char = matrixStrings[i][Math.floor(frames % 20)];
+        if (Math.random() < 0.005) char = toxicMatrixChars[Math.floor(Math.random() * toxicMatrixChars.length)];
+        ctx.fillText(char, i * 18, matrixDrops[i]);
+        matrixDrops[i] += 8;
+        if(matrixDrops[i] > canvas.height && Math.random() > 0.98) { matrixDrops[i] = 0; matrixStrings[i] = matrixStrings[i].map(() => String.fromCharCode(0x30A0 + Math.random() * 96)); }
+      }
+    }
+
+    // --- GAME LOOP LOGIC (Update) ---
+    function updateGame() {
+      player.x = lerp(player.x, player.targetX, 0.4);
+      player.y = lerp(player.y, player.targetY, 0.4);
+
+      // Spawn đạn (Đa dạng và nhanh dần)
+      let spawnRate = Math.max(10, 50 - Math.floor(score / 150));
+      if (frames % spawnRate === 0) {
+        bullets.push(new Bullet());
+        if (Math.random() < 0.3) bullets.push(new Bullet("🧱")); // Thỉnh thoảng spawn gạch
+        if (Math.random() < 0.1) bullets.push(new Bullet("💩")); // Thỉnh thoảng spawn phân đuổi
+      }
+
+      // Cập nhật đạn & check va chạm
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        let b = bullets[i];
+        b.update();
+        if (b.x < -100 || b.x > canvas.width + 100 || b.y < -100 || b.y > canvas.height + 100) { bullets.splice(i, 1); continue; }
+
+        let dx = b.x - player.x; let dy = b.y - player.y;
+        let distance = Math.sqrt(dx*dx + dy*dy);
+
+        // KIỂM TRA VA CHẠM
+        if (distance < player.hitboxRadius + b.radius - 8) { 
+          if (player.hasShield) {
+            // NẾU CÓ KHIÊN BÍ MẬT: Đỡ đạn, vỡ khiên, đạn biến mất
+            player.hasShield = false;
+            bullets.splice(i, 1);
+            screenShake = 10;
+            createShieldBreakParticles(player.x, player.y);
+          } else {
+            // KHÔNG CÓ KHIÊN: CHẾT
+            gameOver(); 
+          }
+        }
+      }
+
+      // Cập nhật Hạt (Particles)
+      for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.life -= 0.05;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+
+      screenShake = Math.max(0, screenShake - 1);
+      frames++;
+      if (frames % 60 === 0) { score++; scoreEl.innerText = `hưởng dương: ${score}s`; }
+    }
+
+    // --- GAME LOOP VẼ (Render) ---
+    function renderGame() {
+      ctx.save();
+      if (screenShake > 0) ctx.translate((Math.random()-0.5) * screenShake, (Math.random()-0.5) * screenShake);
+      drawMatrixBackground();
+      bullets.forEach(b => b.draw());
+
+      // Vẽ các hạt vỡ khiên
+      particles.forEach(p => {
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2); ctx.fill();
+        ctx.globalAlpha = 1.0;
+      });
+
+      // VẼ KHIÊN ẨN MÀU XANH TRONG SUỐT (nếu người chơi đã lắc đầu thành công)
+      if (player.hasShield) {
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, player.radius + 15, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(0, 255, 255, 0.8)";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.fillStyle = "rgba(0, 255, 255, 0.2)";
+        ctx.fill();
+      }
+
+      // Vẽ Player (Điểm mũi)
+      ctx.fillStyle = "#fff"; ctx.font = "24px Arial"; ctx.textAlign = "center";
+      ctx.fillText("😎", player.x, player.y);
+      ctx.restore();
+    }
+
+    function gameLoop() {
+      if (isGameRunning) {
+        updateGame(); renderGame(); gameLoopId = requestAnimationFrame(gameLoop);
+      }
+    }
+
+    // --- QUẢN LÝ TRẠNG THÁI GAME ---
+    function startGame() {
+      overlayMenu.style.display = "none";
+      isGameRunning = true;
+      score = 0; frames = 0; bullets = []; particles = []; screenShake = 0;
+      player.hasShield = false; // Reset khiên
+      scoreEl.innerText = "cố gắng: 0s";
+      gameLoop();
+    }
+
+    function gameOver() {
+      isGameRunning = false; cancelAnimationFrame(gameLoopId);
+      overlayMenu.style.display = "flex";
+      
+      let failMsg = "hơi non !";
+      if (score < 5) failMsg = "gà thế không biết ? THỬ LẠI ĐI!";
+      else if (score > 10) failMsg = " CŨNG KHÉT ĐẤY!\NHƯNG VẪN CHẾT con gà à.";
+      else if (score > 30) failMsg = " chúc mừng bạn đã nhận được phần thưởng từ chủ phát hành game !";
+
+      msgEl.innerHTML = `${failMsg}<br>tuổi thọ : <span id="score_final">${score} giây</span>`;
+      startBtn.innerText = " (caydodai)";
+      startBtn.style.display = "block";
+    }
+
+    startBtn.addEventListener('click', startGame);
+
+  </script>
 </body>
 </html>
